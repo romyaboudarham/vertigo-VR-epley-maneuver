@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Vertigo VR – Epley Maneuver</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="script.js"></script>
+  <style>
+    body { margin: 0; background: #000; }
+  </style>
+</head>
+
+<body>
+  <a-scene
+    background="color: #0d0d1a"
+    vr-mode-ui="enabled: true"
+    renderer="antialias: true">
+
+    <!-- ═══════════════════════════════════════════
+         Camera + Gaze Cursor
+    ════════════════════════════════════════════ -->
+    <a-camera
+      position="0 0 0"
+      look-controls="magicWindowTrackingEnabled: true"
+      wasd-controls="enabled: false">
+
+      <a-cursor
+        color="#ffffff"
+        opacity="0.9"
+        fuse="false"
+        raycaster="objects: .gaze-target; far: 20">
+      </a-cursor>
+
+    </a-camera>
+
+    <!-- ═══════════════════════════════════════════
+         SCENE 1 — Ear Selection (landing page)
+    ════════════════════════════════════════════ -->
+    <a-entity id="scene-selection" visible="true">
+
+      <!-- Title -->
+      <a-text
+        value="Which ear is affected?"
+        position="0 1.8 -5"
+        align="center"
+        color="#e0e0e0"
+        width="7"
+        font="roboto">
+      </a-text>
+
+      <!-- LEFT EAR hit area -->
+      <a-entity
+        id="left-option"
+        class="gaze-target"
+        geometry="primitive: circle; radius: 0.75"
+        material="color: #000; opacity: 0; transparent: true; side: double"
+        position="-2.8 0 -5"
+        gaze-select="label: left; duration: 3000">
+
+        <a-circle
+          class="visual-dot"
+          radius="0.65"
+          position="0 0 0.001"
+          material="shader: flat; color: #2979ff; side: double">
+        </a-circle>
+
+        <a-ring
+          class="gaze-ring"
+          radius-inner="0.68"
+          radius-outer="0.75"
+          position="0 0 0.0005"
+          material="shader: flat; color: #2979ff; opacity: 0.35; transparent: true; side: double">
+        </a-ring>
+
+        <a-text
+          class="countdown-text"
+          value=""
+          position="0 0 0.003"
+          align="center"
+          color="#ffffff"
+          width="1.2"
+          wrap-count="2"
+          font="roboto">
+        </a-text>
+
+      </a-entity>
+
+      <a-text
+        value="LEFT EAR"
+        position="-2.8 -1.1 -5"
+        align="center"
+        color="#90caf9"
+        width="3"
+        font="roboto">
+      </a-text>
+
+      <!-- RIGHT EAR hit area -->
+      <a-entity
+        id="right-option"
+        class="gaze-target"
+        geometry="primitive: circle; radius: 0.75"
+        material="color: #000; opacity: 0; transparent: true; side: double"
+        position="2.8 0 -5"
+        gaze-select="label: right; duration: 3000">
+
+        <a-circle
+          class="visual-dot"
+          radius="0.65"
+          position="0 0 0.001"
+          material="shader: flat; color: #ff1744; side: double">
+        </a-circle>
+
+        <a-ring
+          class="gaze-ring"
+          radius-inner="0.68"
+          radius-outer="0.75"
+          position="0 0 0.0005"
+          material="shader: flat; color: #ff1744; opacity: 0.35; transparent: true; side: double">
+        </a-ring>
+
+        <a-text
+          class="countdown-text"
+          value=""
+          position="0 0 0.003"
+          align="center"
+          color="#ffffff"
+          width="1.2"
+          wrap-count="2"
+          font="roboto">
+        </a-text>
+
+      </a-entity>
+
+      <a-text
+        value="RIGHT EAR"
+        position="2.8 -1.1 -5"
+        align="center"
+        color="#ef9a9a"
+        width="3"
+        font="roboto">
+      </a-text>
+
+    </a-entity><!-- /scene-selection -->
+
+
+    <!-- ═══════════════════════════════════════════
+         SCENE 2A — Left Ear Experience
+    ════════════════════════════════════════════ -->
+    <a-entity id="scene-left" visible="false">
+
+      <a-text
+        value="Left Ear – Epley Maneuver"
+        position="0 1.8 -5"
+        align="center"
+        color="#90caf9"
+        width="7"
+        font="roboto">
+      </a-text>
+
+      <a-text
+        value="Left ear experience coming soon."
+        position="0 0.4 -5"
+        align="center"
+        color="#e0e0e0"
+        width="6"
+        font="roboto">
+      </a-text>
+
+      <!-- BACK button -->
+      <a-entity
+        class="gaze-target"
+        geometry="primitive: circle; radius: 0.45"
+        material="color: #000; opacity: 0; transparent: true; side: double"
+        position="0 -1.2 -5"
+        gaze-select="label: back; duration: 3000">
+
+        <a-circle
+          class="visual-dot"
+          radius="0.4"
+          position="0 0 0.001"
+          material="shader: flat; color: #546e7a; side: double">
+        </a-circle>
+
+        <a-ring
+          class="gaze-ring"
+          radius-inner="0.42"
+          radius-outer="0.45"
+          position="0 0 0.0005"
+          material="shader: flat; color: #546e7a; opacity: 0.4; transparent: true; side: double">
+        </a-ring>
+
+        <a-text
+          class="countdown-text"
+          value=""
+          position="0 0 0.003"
+          align="center"
+          color="#ffffff"
+          width="0.75"
+          wrap-count="2"
+          font="roboto">
+        </a-text>
+
+      </a-entity>
+
+      <a-text
+        value="BACK"
+        position="0 -1.8 -5"
+        align="center"
+        color="#90a4ae"
+        width="3"
+        font="roboto">
+      </a-text>
+
+    </a-entity><!-- /scene-left -->
+
+
+    <!-- ═══════════════════════════════════════════
+         SCENE 2B — Right Ear Experience
+    ════════════════════════════════════════════ -->
+    <a-entity id="scene-right" visible="false">
+
+      <a-text
+        value="Right Ear – Epley Maneuver"
+        position="0 1.8 -5"
+        align="center"
+        color="#ef9a9a"
+        width="7"
+        font="roboto">
+      </a-text>
+
+      <a-text
+        value="Right ear experience coming soon."
+        position="0 0.4 -5"
+        align="center"
+        color="#e0e0e0"
+        width="6"
+        font="roboto">
+      </a-text>
+
+      <!-- BACK button -->
+      <a-entity
+        class="gaze-target"
+        geometry="primitive: circle; radius: 0.45"
+        material="color: #000; opacity: 0; transparent: true; side: double"
+        position="0 -1.2 -5"
+        gaze-select="label: back; duration: 3000">
+
+        <a-circle
+          class="visual-dot"
+          radius="0.4"
+          position="0 0 0.001"
+          material="shader: flat; color: #546e7a; side: double">
+        </a-circle>
+
+        <a-ring
+          class="gaze-ring"
+          radius-inner="0.42"
+          radius-outer="0.45"
+          position="0 0 0.0005"
+          material="shader: flat; color: #546e7a; opacity: 0.4; transparent: true; side: double">
+        </a-ring>
+
+        <a-text
+          class="countdown-text"
+          value=""
+          position="0 0 0.003"
+          align="center"
+          color="#ffffff"
+          width="0.75"
+          wrap-count="2"
+          font="roboto">
+        </a-text>
+
+      </a-entity>
+
+      <a-text
+        value="BACK"
+        position="0 -1.8 -5"
+        align="center"
+        color="#90a4ae"
+        width="3"
+        font="roboto">
+      </a-text>
+
+    </a-entity><!-- /scene-right -->
+
+    <a-sky color="#0d0d1a"></a-sky>
+
+  </a-scene>
+</body>
+</html>
