@@ -2,6 +2,9 @@
 
 A WebVR physical therapy experience for BPPV (vertigo). Patients use gaze control to navigate — no tapping required, just look at a target for 3 seconds to select it.
 
+## Try it live
+Open [https://neo-vertigo-pt.vercel.app/](https://neo-vertigo-pt.vercel.app/) in your browser
+
 ## Running locally
 
 ```bash
