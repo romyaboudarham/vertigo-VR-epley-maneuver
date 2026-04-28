@@ -1,5 +1,7 @@
 # Vertigo VR – Epley Maneuver
 
+By Eylul and Romy
+
 A WebVR physical therapy experience for BPPV (vertigo). Patients use gaze control to navigate — no tapping required, just look at a target for 3 seconds to select it.
 
 ## Try it live
