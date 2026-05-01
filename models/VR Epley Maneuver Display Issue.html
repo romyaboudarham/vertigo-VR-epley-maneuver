@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Tube</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #050a0f; overflow: hidden; }
+    canvas { width: 100vw; height: 100vh; display: block; }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x050a0f, 1);
+
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 100);
+
+function resize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  cam.aspect = window.innerWidth / window.innerHeight;
+  cam.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
+
+const pts = [
+  new THREE.Vector3( 2.88, 1.30, 1.58),
+  new THREE.Vector3( 3.79, 8.05, 2.76),
+  new THREE.Vector3( 2.18, 8.01, 0.69),
+  new THREE.Vector3(-0.49, 7.94, 0.71),
+  new THREE.Vector3(-2.11, 7.98, 2.80),
+  new THREE.Vector3(-1.19, 1.27, 1.59),
+];
+
+const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
+
+const tubeMat = new THREE.MeshPhongMaterial({
+  color: 0x88bbff,
+  transparent: true,
+  opacity: 0.28,
+  side: THREE.DoubleSide,
+  shininess: 140,
+  specular: 0xffffff,
+});
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 300, 0.42, 20, false), tubeMat));
+
+const waterMat = new THREE.MeshPhongMaterial({
+  color: 0x1155cc,
+  transparent: true,
+  opacity: 0.88,
+  shininess: 80,
+  specular: 0x4488ff,
+});
+const waterMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 300, 0.30, 18, false), waterMat);
+scene.add(waterMesh);
+
+const capGeo = new THREE.SphereGeometry(0.42, 16, 16);
+[pts[0], pts[pts.length - 1]].forEach(p => {
+  const c = new THREE.Mesh(capGeo, tubeMat);
+  c.position.copy(p);
+  scene.add(c);
+});
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const l1 = new THREE.PointLight(0x4488ff, 3, 20); l1.position.set(0, 6, 4); scene.add(l1);
+const l2 = new THREE.PointLight(0xffffff, 1.5, 20); l2.position.set(-4, 8, 2); scene.add(l2);
+
+const center = new THREE.Vector3(0.85, 4.6, 1.7);
+cam.position.set(0, 4.5, 14);
+cam.lookAt(center);
+
+let isDragging = false, lastX = 0, lastY = 0, rotY = 0, rotX = 0, zoom = 1;
+canvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  rotY += (e.clientX - lastX) * 0.007;
+  rotX += (e.clientY - lastY) * 0.005;
+  rotX = Math.max(-0.6, Math.min(0.6, rotX));
+  lastX = e.clientX; lastY = e.clientY;
+});
+canvas.addEventListener('wheel', e => {
+  zoom = Math.max(0.4, Math.min(3, zoom + e.deltaY * 0.001));
+  e.preventDefault();
+}, { passive: false });
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  const wpts = pts.map((p, i) => new THREE.Vector3(
+    p.x,
+    p.y + Math.sin(i * 0.35 + t * 1.4) * 0.012,
+    p.z
+  ));
+  waterMesh.geometry.dispose();
+  waterMesh.geometry = new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(wpts, false, 'catmullrom', 0.5), 300, 0.30, 18, false
+  );
+  cam.position.set(
+    center.x + Math.sin(rotY) * 12 * zoom,
+    center.y + rotX * 4,
+    center.z + Math.cos(rotY) * 12 * zoom
+  );
+  cam.lookAt(center);
+  renderer.render(scene, cam);
+}
+animate();
+</script>
+</body>
+</html>
