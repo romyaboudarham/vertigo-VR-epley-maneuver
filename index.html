@@ -32,6 +32,10 @@
         raycaster="objects: .gaze-target; far: 20">
       </a-cursor>
 
+      <!-- Tube locked to camera — shown/hidden by SceneManager -->
+      <a-entity id="tube-left"  tube-canal="ear: left"  position="0 0 -3" scale="0.5 0.5 0.5" visible="false"></a-entity>
+      <a-entity id="tube-right" tube-canal="ear: right" position="0 0 -3" scale="0.5 0.5 0.5" visible="false"></a-entity>
+
     </a-camera>
 
     <!-- ═══════════════════════════════════════════
@@ -158,8 +162,6 @@
         font="roboto">
       </a-text>
 
-      <a-entity tube-canal position="0 1.6 -3" scale="0.5 0.5 0.5"></a-entity>
-
       <!-- BACK button -->
       <a-entity
         class="gaze-target"
@@ -221,8 +223,6 @@
         width="7"
         font="roboto">
       </a-text>
-
-      <a-entity tube-canal position="0 1.6 -3" scale="0.5 0.5 0.5"></a-entity>
 
       <!-- BACK button -->
       <a-entity

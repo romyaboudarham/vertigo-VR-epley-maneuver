@@ -3,6 +3,10 @@
 // Tube Canal – A-Frame component
 // ─────────────────────────────────────────────
 AFRAME.registerComponent('tube-canal', {
+  schema: {
+    ear: { type: 'string', default: '' }
+  },
+
   init: function () {
     var T = THREE;
 
@@ -44,6 +48,18 @@ AFRAME.registerComponent('tube-canal', {
       self.group.add(c);
     });
 
+    // Otolith crystal sphere — left ear at first point, right ear at last point
+    var ear = this.data.ear;
+    if (ear === 'left' || ear === 'right') {
+      var crystalPt = ear === 'left' ? this.tpts[0] : this.tpts[this.tpts.length - 1];
+      var crystalMat = new T.MeshPhongMaterial({
+        color: 0xf5e6a0, emissive: 0x7a6010, shininess: 200, specular: 0xffffff,
+      });
+      var crystal = new T.Mesh(new T.SphereGeometry(0.36, 20, 20), crystalMat);
+      crystal.position.copy(crystalPt);
+      this.group.add(crystal);
+    }
+
     var ambient = new T.AmbientLight(0xffffff, 0.6);
     this.group.add(ambient);
     var pt1 = new T.PointLight(0x4488ff, 3, 20);
@@ -58,6 +74,7 @@ AFRAME.registerComponent('tube-canal', {
   },
 
   tick: function (time, delta) {
+    if (!this.el.object3D.visible) return;
     var T = THREE;
     this.elapsed += delta / 1000;
     var t = this.elapsed;
@@ -95,6 +112,12 @@ const SceneManager = {
 
     // Show target scene
     document.getElementById('scene-' + name).setAttribute('visible', true);
+
+    // Show the camera-locked tube for the active ear, hide otherwise
+    ['left', 'right'].forEach(function (ear) {
+      var el = document.getElementById('tube-' + ear);
+      if (el) el.setAttribute('visible', name === ear);
+    });
 
     // Reset all gaze-select components so in-progress timers don't carry over
     document.querySelectorAll('[gaze-select]').forEach(function (el) {
