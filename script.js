@@ -1,3 +1,86 @@
+
+// ─────────────────────────────────────────────
+// Tube Canal – A-Frame component
+// ─────────────────────────────────────────────
+AFRAME.registerComponent('tube-canal', {
+  init: function () {
+    var T = THREE;
+
+    var pts = [
+      new T.Vector3( 2.88, 1.30, 1.58),
+      new T.Vector3( 3.79, 8.05, 2.76),
+      new T.Vector3( 2.18, 8.01, 0.69),
+      new T.Vector3(-0.49, 7.94, 0.71),
+      new T.Vector3(-2.11, 7.98, 2.80),
+      new T.Vector3(-1.19, 1.27, 1.59),
+    ];
+
+    // Shift origin to the arch top so the entity's (0,0,0) is the arch peak
+    var offset = new T.Vector3(0.85, 7.9, 1.2);
+    this.tpts = pts.map(function (p) { return p.clone().sub(offset); });
+
+    var curve = new T.CatmullRomCurve3(this.tpts, false, 'catmullrom', 0.5);
+
+    var tubeMat = new T.MeshPhongMaterial({
+      color: 0x88bbff, transparent: true, opacity: 0.28,
+      side: T.DoubleSide, shininess: 140, specular: 0xffffff,
+    });
+    var waterMat = new T.MeshPhongMaterial({
+      color: 0x1155cc, transparent: true, opacity: 0.88,
+      shininess: 80, specular: 0x4488ff,
+    });
+
+    this.group = new T.Group();
+    this.group.add(new T.Mesh(new T.TubeGeometry(curve, 300, 0.42, 20, false), tubeMat));
+
+    this.waterMesh = new T.Mesh(new T.TubeGeometry(curve, 300, 0.30, 18, false), waterMat);
+    this.group.add(this.waterMesh);
+
+    var capGeo = new T.SphereGeometry(0.42, 16, 16);
+    var self = this;
+    [this.tpts[0], this.tpts[this.tpts.length - 1]].forEach(function (p) {
+      var c = new T.Mesh(capGeo, tubeMat);
+      c.position.copy(p);
+      self.group.add(c);
+    });
+
+    var ambient = new T.AmbientLight(0xffffff, 0.6);
+    this.group.add(ambient);
+    var pt1 = new T.PointLight(0x4488ff, 3, 20);
+    pt1.position.set(0, -1.5, 3);
+    this.group.add(pt1);
+    var pt2 = new T.PointLight(0xffffff, 1.5, 20);
+    pt2.position.set(-4, 0, 2);
+    this.group.add(pt2);
+
+    this.el.object3D.add(this.group);
+    this.elapsed = 0;
+  },
+
+  tick: function (time, delta) {
+    var T = THREE;
+    this.elapsed += delta / 1000;
+    var t = this.elapsed;
+    var wpts = this.tpts.map(function (p, i) {
+      return new T.Vector3(
+        p.x,
+        p.y + Math.sin(i * 0.35 + t * 1.4) * 0.012,
+        p.z
+      );
+    });
+    this.waterMesh.geometry.dispose();
+    this.waterMesh.geometry = new T.TubeGeometry(
+      new T.CatmullRomCurve3(wpts, false, 'catmullrom', 0.5),
+      300, 0.30, 18, false
+    );
+  },
+
+  remove: function () {
+    if (this.waterMesh) this.waterMesh.geometry.dispose();
+    this.el.object3D.remove(this.group);
+  }
+});
+
 // ─────────────────────────────────────────────
 // Scene Manager
 // ─────────────────────────────────────────────

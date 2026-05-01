@@ -72,8 +72,8 @@ scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const l1 = new THREE.PointLight(0x4488ff, 3, 20); l1.position.set(0, 6, 4); scene.add(l1);
 const l2 = new THREE.PointLight(0xffffff, 1.5, 20); l2.position.set(-4, 8, 2); scene.add(l2);
 
-const center = new THREE.Vector3(0.85, 4.6, 1.7);
-cam.position.set(0, 4.5, 14);
+const center = new THREE.Vector3(0.85, 7.9, 1.2);
+cam.position.set(0.85, 7.9, 6.2);
 cam.lookAt(center);
 
 let isDragging = false, lastX = 0, lastY = 0, rotY = 0, rotX = 0, zoom = 1;
@@ -83,11 +83,11 @@ window.addEventListener('mousemove', e => {
   if (!isDragging) return;
   rotY += (e.clientX - lastX) * 0.007;
   rotX += (e.clientY - lastY) * 0.005;
-  rotX = Math.max(-0.6, Math.min(0.6, rotX));
+  rotX = Math.max(-0.3, Math.min(0.3, rotX));
   lastX = e.clientX; lastY = e.clientY;
 });
 canvas.addEventListener('wheel', e => {
-  zoom = Math.max(0.4, Math.min(3, zoom + e.deltaY * 0.001));
+  zoom = Math.max(0.4, Math.min(1.8, zoom + e.deltaY * 0.001));
   e.preventDefault();
 }, { passive: false });
 
@@ -106,9 +106,9 @@ function animate() {
     new THREE.CatmullRomCurve3(wpts, false, 'catmullrom', 0.5), 300, 0.30, 18, false
   );
   cam.position.set(
-    center.x + Math.sin(rotY) * 12 * zoom,
-    center.y + rotX * 4,
-    center.z + Math.cos(rotY) * 12 * zoom
+    center.x + Math.sin(rotY) * 5 * zoom,
+    center.y + rotX * 3,
+    center.z + Math.cos(rotY) * 5 * zoom
   );
   cam.lookAt(center);
   renderer.render(scene, cam);
