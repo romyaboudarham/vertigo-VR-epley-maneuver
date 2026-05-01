@@ -48,16 +48,22 @@ AFRAME.registerComponent('tube-canal', {
       self.group.add(c);
     });
 
-    // Otolith crystal sphere — left ear at first point, right ear at last point
+    // Otolith crystal sphere — left ear starts at first point, right ear at last point
     var ear = this.data.ear;
+    this.crystal = null;
+    this.ballT  = 0;
+    this.ballV  = 0;
+    this.curve  = curve;
+    this.curveLength = curve.getLength();
+
     if (ear === 'left' || ear === 'right') {
-      var crystalPt = ear === 'left' ? this.tpts[0] : this.tpts[this.tpts.length - 1];
+      this.ballT = (ear === 'right') ? 1.0 : 0.0;
       var crystalMat = new T.MeshPhongMaterial({
         color: 0xf5e6a0, emissive: 0x7a6010, shininess: 200, specular: 0xffffff,
       });
-      var crystal = new T.Mesh(new T.SphereGeometry(0.36, 20, 20), crystalMat);
-      crystal.position.copy(crystalPt);
-      this.group.add(crystal);
+      this.crystal = new T.Mesh(new T.SphereGeometry(0.36, 20, 20), crystalMat);
+      this.crystal.position.copy(curve.getPoint(this.ballT));
+      this.group.add(this.crystal);
     }
 
     var ambient = new T.AmbientLight(0xffffff, 0.6);
@@ -71,13 +77,17 @@ AFRAME.registerComponent('tube-canal', {
 
     this.el.object3D.add(this.group);
     this.elapsed = 0;
+    this._invWorld = new THREE.Matrix4();
   },
 
   tick: function (time, delta) {
     if (!this.el.object3D.visible) return;
     var T = THREE;
-    this.elapsed += delta / 1000;
+    var dt = Math.min(delta / 1000, 0.05); // cap at 50 ms to avoid tunnelling
+    this.elapsed += dt;
     var t = this.elapsed;
+
+    // Water ripple animation
     var wpts = this.tpts.map(function (p, i) {
       return new T.Vector3(
         p.x,
@@ -90,6 +100,37 @@ AFRAME.registerComponent('tube-canal', {
       new T.CatmullRomCurve3(wpts, false, 'catmullrom', 0.5),
       300, 0.30, 18, false
     );
+
+    // Ball physics
+    if (this.crystal) {
+      // Transform world-space gravity into this entity's local space.
+      // As the camera (and tube) rotates with head movement, localGravity
+      // changes direction, causing the ball to roll through the tube.
+      this._invWorld.copy(this.el.object3D.matrixWorld).invert();
+      var localGravity = new T.Vector3(0, -1, 0).transformDirection(this._invWorld);
+
+      // Acceleration = component of gravity along the curve tangent (m/s² → t/s²)
+      var tangent = this.curve.getTangent(this.ballT);
+      var G = 6.0; // gravity strength, tuned for feel
+      var accel = localGravity.dot(tangent) * G / this.curveLength;
+
+      // Integrate velocity and position
+      this.ballV += accel * dt;
+      this.ballV *= Math.exp(-1.8 * dt); // viscous damping (fluid resistance)
+      this.ballT += this.ballV * dt;
+
+      // Soft bounce at both ends
+      if (this.ballT <= 0) {
+        this.ballT = 0;
+        this.ballV = Math.abs(this.ballV) * 0.25;
+      }
+      if (this.ballT >= 1) {
+        this.ballT = 1;
+        this.ballV = -Math.abs(this.ballV) * 0.25;
+      }
+
+      this.crystal.position.copy(this.curve.getPoint(this.ballT));
+    }
   },
 
   remove: function () {
