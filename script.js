@@ -221,7 +221,7 @@ AFRAME.registerComponent('gaze-select', {
     this._clearCountdownTimers();
     this._resolveChildren();
 
-    var colors = { left: '#2979ff', right: '#ff1744', back: '#546e7a' };
+    var colors = { left: '#2979ff', right: '#ff1744', back: '#546e7a', start: '#00c853' };
     var origColor = colors[this.data.label] || '#ffffff';
 
     if (this.visual) {
@@ -276,7 +276,7 @@ AFRAME.registerComponent('gaze-select', {
       this.visual.setAttribute('scale', { x: 1, y: 1, z: 1 });
     }
 
-    var colors = { left: '#2979ff', right: '#ff1744', back: '#546e7a' };
+    var colors = { left: '#2979ff', right: '#ff1744', back: '#546e7a', start: '#00c853' };
     this._ringColor(colors[this.data.label] || '#ffffff', 0.35);
 
     this._clearCountdownTimers();
@@ -324,6 +324,8 @@ document.addEventListener('DOMContentLoaded', function () {
         SceneManager.show(label);
       } else if (label === 'back') {
         SceneManager.show('selection');
+      } else if (label === 'start') {
+        // TODO: begin Epley maneuver sequence
       }
     }, 600);
   });

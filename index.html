@@ -33,8 +33,8 @@
       </a-cursor>
 
       <!-- Tube locked to camera — shown/hidden by SceneManager -->
-      <a-entity id="tube-left"  tube-canal="ear: left"  position="0 0 -3" scale="0.5 0.5 0.5" visible="false"></a-entity>
-      <a-entity id="tube-right" tube-canal="ear: right" position="0 0 -3" scale="0.5 0.5 0.5" visible="false"></a-entity>
+      <a-entity id="tube-left"  tube-canal="ear: left"  position="1.094 -0.912 -2.547" rotation="9.653 -157.096 -1.489" scale="0.5 0.5 0.5" visible="false"></a-entity>
+      <a-entity id="tube-right" tube-canal="ear: right" position="1.094 -0.912 -2.547" rotation="9.653 -157.096 -1.489" scale="0.5 0.5 0.5" visible="false"></a-entity>
 
     </a-camera>
 
@@ -153,12 +153,50 @@
     ════════════════════════════════════════════ -->
     <a-entity id="scene-left" visible="false">
 
+      <!-- START button — on the ceiling so the user lies down and looks up -->
+      <a-entity
+        class="gaze-target"
+        geometry="primitive: circle; radius: 0.6"
+        material="color: #000; opacity: 0; transparent: true; side: double"
+        position="0 5 -1"
+        rotation="75 0 0"
+        gaze-select="label: start; duration: 3000">
+
+        <a-circle
+          class="visual-dot"
+          radius="0.52"
+          position="0 0 0.001"
+          material="shader: flat; color: #00c853; side: double">
+        </a-circle>
+
+        <a-ring
+          class="gaze-ring"
+          radius-inner="0.55"
+          radius-outer="0.6"
+          position="0 0 0.0005"
+          material="shader: flat; color: #00c853; opacity: 0.35; transparent: true; side: double">
+        </a-ring>
+
+        <a-text
+          class="countdown-text"
+          value=""
+          position="0 0 0.003"
+          align="center"
+          color="#ffffff"
+          width="1"
+          wrap-count="2"
+          font="roboto">
+        </a-text>
+
+      </a-entity>
+
       <a-text
-        value="Left Ear – Epley Maneuver"
-        position="0 1.8 -5"
+        value="START"
+        position="0 3.9 -0.85"
+        rotation="75 0 0"
         align="center"
-        color="#90caf9"
-        width="7"
+        color="#69f0ae"
+        width="3"
         font="roboto">
       </a-text>
 
@@ -167,7 +205,7 @@
         class="gaze-target"
         geometry="primitive: circle; radius: 0.45"
         material="color: #000; opacity: 0; transparent: true; side: double"
-        position="0 -1.2 -5"
+        position="0 0 -5"
         gaze-select="label: back; duration: 3000">
 
         <a-circle
@@ -182,7 +220,7 @@
           radius-inner="0.42"
           radius-outer="0.45"
           position="0 0 0.0005"
-          material="shader: flat; color: #546e7a; opacity: 0.4; transparent: true; side: double">
+          material="shader: flat; color: #546e7a; opacity: 0.35; transparent: true; side: double">
         </a-ring>
 
         <a-text
@@ -200,7 +238,7 @@
 
       <a-text
         value="BACK"
-        position="0 -1.8 -5"
+        position="0 -0.6 -5"
         align="center"
         color="#90a4ae"
         width="3"
@@ -215,12 +253,50 @@
     ════════════════════════════════════════════ -->
     <a-entity id="scene-right" visible="false">
 
+      <!-- START button — on the ceiling so the user lies down and looks up -->
+      <a-entity
+        class="gaze-target"
+        geometry="primitive: circle; radius: 0.6"
+        material="color: #000; opacity: 0; transparent: true; side: double"
+        position="0 5 -1"
+        rotation="75 0 0"
+        gaze-select="label: start; duration: 3000">
+
+        <a-circle
+          class="visual-dot"
+          radius="0.52"
+          position="0 0 0.001"
+          material="shader: flat; color: #00c853; side: double">
+        </a-circle>
+
+        <a-ring
+          class="gaze-ring"
+          radius-inner="0.55"
+          radius-outer="0.6"
+          position="0 0 0.0005"
+          material="shader: flat; color: #00c853; opacity: 0.35; transparent: true; side: double">
+        </a-ring>
+
+        <a-text
+          class="countdown-text"
+          value=""
+          position="0 0 0.003"
+          align="center"
+          color="#ffffff"
+          width="1"
+          wrap-count="2"
+          font="roboto">
+        </a-text>
+
+      </a-entity>
+
       <a-text
-        value="Right Ear – Epley Maneuver"
-        position="0 1.8 -5"
+        value="START"
+        position="0 3.9 -0.85"
+        rotation="75 0 0"
         align="center"
-        color="#ef9a9a"
-        width="7"
+        color="#69f0ae"
+        width="3"
         font="roboto">
       </a-text>
 
@@ -229,7 +305,7 @@
         class="gaze-target"
         geometry="primitive: circle; radius: 0.45"
         material="color: #000; opacity: 0; transparent: true; side: double"
-        position="0 -1.2 -5"
+        position="0 0 -5"
         gaze-select="label: back; duration: 3000">
 
         <a-circle
@@ -244,7 +320,7 @@
           radius-inner="0.42"
           radius-outer="0.45"
           position="0 0 0.0005"
-          material="shader: flat; color: #546e7a; opacity: 0.4; transparent: true; side: double">
+          material="shader: flat; color: #546e7a; opacity: 0.35; transparent: true; side: double">
         </a-ring>
 
         <a-text
@@ -262,7 +338,7 @@
 
       <a-text
         value="BACK"
-        position="0 -1.8 -5"
+        position="0 -0.6 -5"
         align="center"
         color="#90a4ae"
         width="3"
