@@ -11,14 +11,14 @@ AFRAME.registerComponent('tube-canal', {
     var T = THREE;
     var self = this;
 
-    // 1. Raw control points
+    // 1. Raw control points — Z set to 0 for a flat planar arch matching anatomy reference
     var raw = [
-      [2.880,2.260,0.962], [3.277,2.553,2.159], [3.673,3.846,3.042],
-      [3.790,6.355,3.707], [3.590,8.630,2.816], [3.222,9.530,1.319],
-      [2.775,8.775,0.342], [1.986,8.074,0.659], [0.041,8.027,0.642],
-      [-0.880,8.822,0.303], [-1.248,9.511,1.336], [-1.797,8.712,2.788],
-      [-2.110,6.355,3.693], [-1.991,3.846,3.056], [-1.591,2.512,2.146],
-      [-1.190,2.266,0.974]
+      [2.880,2.260,0], [3.277,2.553,0], [3.673,3.846,0],
+      [3.790,6.355,0], [3.590,8.630,0], [3.222,9.530,0],
+      [2.775,8.775,0], [1.986,8.074,0], [0.041,8.027,0],
+      [-0.880,8.822,0], [-1.248,9.511,0], [-1.797,8.712,0],
+      [-2.110,6.355,0], [-1.991,3.846,0], [-1.591,2.512,0],
+      [-1.190,2.266,0]
     ];
 
     // 2. Apply 40% X-axis Gaussian spread centered at Y=8.8, sigma²=3.5
@@ -57,43 +57,27 @@ AFRAME.registerComponent('tube-canal', {
     this.curve = curve;
     this.curveLength = curve.getLength();
 
-    // Two-pass glass: back faces first, front faces second — gives a hollow glass look
-    var tubeGeo = new T.TubeGeometry(curve, 500, 0.42, 24, false);
-
-    var backMat = new T.MeshPhongMaterial({
-      color: 0xaaddff, transparent: true, opacity: 0.07,
-      side: T.BackSide, shininess: 220, specular: 0xffffff, depthWrite: false,
+    var tubeMat = new T.MeshPhongMaterial({
+      color: 0x88bbff, transparent: true, opacity: 0.5,
+      side: T.DoubleSide, shininess: 150, specular: 0xffffff,
     });
-    var frontMat = new T.MeshPhongMaterial({
-      color: 0xcceeff, transparent: true, opacity: 0.13,
-      side: T.FrontSide, shininess: 220, specular: 0xffffff, depthWrite: false,
+    var waterMat = new T.MeshPhongMaterial({
+      color: 0x1155cc, transparent: true, opacity: 0.88,
+      shininess: 80, specular: 0x4488ff,
     });
-
-    var backMesh  = new T.Mesh(tubeGeo, backMat);
-    var frontMesh = new T.Mesh(tubeGeo, frontMat);
-    backMesh.renderOrder  = 1;
-    frontMesh.renderOrder = 2;
 
     this.group = new T.Group();
-    this.group.add(backMesh);
-    this.group.add(frontMesh);
+    this.group.add(new T.Mesh(new T.TubeGeometry(curve, 500, 0.42, 24, false), tubeMat));
 
-    // Dummy waterMesh so tick() doesn't crash (invisible)
-    this.waterMesh = new T.Mesh(new T.TubeGeometry(curve, 60, 0.01, 4, false),
-      new T.MeshBasicMaterial({ visible: false }));
+    this.waterMesh = new T.Mesh(new T.TubeGeometry(curve, 500, 0.30, 24, false), waterMat);
     this.group.add(this.waterMesh);
 
     // Sphere end caps
     var capGeo = new T.SphereGeometry(0.42, 16, 16);
     [pts[0], pts[pts.length - 1]].forEach(function (p) {
-      var backCap  = new T.Mesh(capGeo, backMat);
-      var frontCap = new T.Mesh(capGeo, frontMat);
-      backCap.renderOrder  = 1;
-      frontCap.renderOrder = 2;
-      backCap.position.copy(p);
-      frontCap.position.copy(p);
-      self.group.add(backCap);
-      self.group.add(frontCap);
+      var cap = new T.Mesh(capGeo, tubeMat);
+      cap.position.copy(p);
+      self.group.add(cap);
     });
 
     // Otolith crystal sphere — left ear starts at first point, right ear at last point
@@ -102,14 +86,28 @@ AFRAME.registerComponent('tube-canal', {
     this.ballT = 0;
     this.ballV = 0;
 
+    this.crystalLight = null;
     if (ear === 'left' || ear === 'right') {
-      this.ballT = (ear === 'right') ? 1.0 : 0.0;
+      this.ballT = (ear === 'right') ? 1 : 0;
+      this.ballV  = 0;
       var crystalMat = new T.MeshPhongMaterial({
-        color: 0xf5e6a0, emissive: 0x7a6010, shininess: 200, specular: 0xffffff,
+        color: 0xff0000,
+        emissive: 0xff0000,
+        emissiveIntensity: 2.5,
+        shininess: 200,
+        specular: 0xffffff,
+        transparent: false,
+        opacity: 1.0,
       });
-      this.crystal = new T.Mesh(new T.SphereGeometry(0.36, 20, 20), crystalMat);
-      this.crystal.position.copy(curve.getPoint(this.ballT));
+      this.crystal = new T.Mesh(new T.OctahedronGeometry(0.22, 0), crystalMat);
+      var startPos = curve.getPoint(this.ballT);
+      this.crystal.position.set(startPos.x, startPos.y, startPos.z);
       this.group.add(this.crystal);
+
+      // Red glow light that follows the crystal
+      this.crystalLight = new T.PointLight(0xff2200, 6, 10);
+      this.crystalLight.position.copy(this.crystal.position);
+      this.group.add(this.crystalLight);
     }
 
     var ambient = new T.AmbientLight(0xffffff, 0.6);
@@ -145,7 +143,7 @@ AFRAME.registerComponent('tube-canal', {
     this.waterMesh.geometry.dispose();
     this.waterMesh.geometry = new T.TubeGeometry(
       new T.CatmullRomCurve3(wpts, false, 'centripetal'),
-      500, 0.30, 24, false
+      200, 0.30, 24, false
     );
 
     // Ball physics — gravity projected onto curve tangent in local space
@@ -160,7 +158,11 @@ AFRAME.registerComponent('tube-canal', {
       this.ballT += this.ballV * dt;
       if (this.ballT <= 0) { this.ballT = 0; this.ballV =  Math.abs(this.ballV) * 0.25; }
       if (this.ballT >= 1) { this.ballT = 1; this.ballV = -Math.abs(this.ballV) * 0.25; }
-      this.crystal.position.copy(this.curve.getPoint(this.ballT));
+      var p = this.curve.getPoint(this.ballT);
+      this.crystal.position.set(p.x, p.y, p.z);
+      this.crystal.rotation.x += dt * 1.2;
+      this.crystal.rotation.y += dt * 0.8;
+      if (this.crystalLight) this.crystalLight.position.copy(this.crystal.position);
     }
   },
 
@@ -174,21 +176,33 @@ AFRAME.registerComponent('tube-canal', {
 // Scene Manager
 // ─────────────────────────────────────────────
 const SceneManager = {
-  scenes: ['selection', 'left', 'right'],
+  // scene-left and scene-right were merged into scene-ear to eliminate
+  // duplicate gaze-target entities at identical world positions — the
+  // raycaster always hit scene-left's buttons first (earlier in DOM),
+  // so scene-right's buttons never received mouseenter events.
+  scenes: ['selection', 'ear'],
+  activeEar: null,
 
   show: function (name) {
+    // 'left' and 'right' both map to the single shared #scene-ear entity
+    var sceneId = (name === 'left' || name === 'right') ? 'ear' : name;
+
     // Hide all scenes
     this.scenes.forEach(function (id) {
       document.getElementById('scene-' + id).setAttribute('visible', false);
     });
 
     // Show target scene
-    document.getElementById('scene-' + name).setAttribute('visible', true);
+    document.getElementById('scene-' + sceneId).setAttribute('visible', true);
 
+    this.activeEar = (name === 'left' || name === 'right') ? name : null;
     ['left', 'right'].forEach(function (ear) {
       var el = document.getElementById('tube-' + ear);
       if (el) el.setAttribute('visible', name === ear);
     });
+
+    var instr = document.getElementById('instruction-text');
+    if (instr) instr.setAttribute('visible', name === 'left' || name === 'right');
 
     // Reset camera to face forward so world-space BACK button is always at bottom center
     var cam = document.querySelector('[camera]');
@@ -203,6 +217,7 @@ const SceneManager = {
       var comp = el.components['gaze-select'];
       if (comp) comp.reset();
     });
+
   }
 };
 
@@ -221,12 +236,15 @@ AFRAME.registerComponent('gaze-select', {
     this.selected       = false;
     this.visual         = null;
     this.countdownEl    = null;
+    this.ring           = null;
 
     this._onEnter = this.onGazeEnter.bind(this);
     this._onLeave = this.onGazeLeave.bind(this);
 
     this.el.addEventListener('mouseenter', this._onEnter);
     this.el.addEventListener('mouseleave', this._onLeave);
+
+    this._resolveChildren();
   },
 
   // Lazily resolve child references once the DOM is ready
@@ -275,7 +293,12 @@ AFRAME.registerComponent('gaze-select', {
 
   onGazeEnter: function () {
     if (this.selected) return;
+    // Bail out if our parent scene entity is hidden — prevents the invisible
+    // scene's buttons (same world position) from intercepting gaze events.
+    var parent = this.el.parentNode;
+    if (parent && parent.object3D && !parent.object3D.visible) return;
     this._resolveChildren();
+    if (!this.visual) return;
 
     // Highlight the ring on hover
     this._ringColor('#ffffff', 0.9);
@@ -307,6 +330,8 @@ AFRAME.registerComponent('gaze-select', {
 
   onGazeLeave: function () {
     if (this.selected) return;
+    var parent = this.el.parentNode;
+    if (parent && parent.object3D && !parent.object3D.visible) return;
     this._resolveChildren();
 
     if (this.visual) {

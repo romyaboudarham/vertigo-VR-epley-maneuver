@@ -5,7 +5,7 @@
   <title>Vertigo VR – Epley Maneuver</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="script.js?v=5"></script>
+  <script src="script.js?v=21"></script>
   <style>
     body { margin: 0; background: #050a0f; }
   </style>
@@ -33,8 +33,20 @@
       </a-cursor>
 
       <!-- Tube locked to camera — shown/hidden by SceneManager -->
-      <a-entity id="tube-left"  tube-canal="ear: left"  position="-0.051 -0.921 -2.512" rotation="9.503 176.01 -0.578" scale="0.5 0.5 0.5" visible="false"></a-entity>
-      <a-entity id="tube-right" tube-canal="ear: right" position="-0.051 -0.921 -2.512" rotation="9.503 176.01 -0.578" scale="0.5 0.5 0.5" visible="false"></a-entity>
+      <a-entity id="tube-left"  tube-canal="ear: left"  position="-0.051 -0.421 -2.512" rotation="9.503 176.01 -0.578" scale="0.375 0.375 0.375" visible="false"></a-entity>
+      <a-entity id="tube-right" tube-canal="ear: right" position="-0.051 -0.421 -2.512" rotation="9.503 176.01 -0.578" scale="0.375 0.375 0.375" visible="false"></a-entity>
+
+      <!-- Instruction text — shown above tube during ear sessions -->
+      <a-text
+        id="instruction-text"
+        value="Lean back, look up to start the session."
+        position="0 1.5 -2.512"
+        align="center"
+        color="#e0e0e0"
+        width="6"
+        font="roboto"
+        visible="false">
+      </a-text>
 
 
 
@@ -151,9 +163,9 @@
 
 
     <!-- ═══════════════════════════════════════════
-         SCENE 2A — Left Ear Experience
+         SCENE 2 — Ear Experience (shared for left/right)
     ════════════════════════════════════════════ -->
-    <a-entity id="scene-left" visible="false">
+    <a-entity id="scene-ear" visible="false">
 
       <!-- START button — on the ceiling so the user lies down and looks up -->
       <a-entity
@@ -215,81 +227,18 @@
         <a-ring class="gaze-ring" radius-inner="0.42" radius-outer="0.45" position="0 0 0.0005"
           material="shader: flat; color: #546e7a; opacity: 0.35; transparent: true; side: double"></a-ring>
         <a-text class="countdown-text" value="" position="0 0 0.003" align="center" color="#ffffff" width="0.75" wrap-count="2" font="roboto"></a-text>
-        <a-text value="BACK" position="0 0 0.002" align="center" anchor="center" color="#90a4ae" width="3" font="roboto"></a-text>
-      </a-entity>
-
-    </a-entity><!-- /scene-left -->
-
-
-    <!-- ═══════════════════════════════════════════
-         SCENE 2B — Right Ear Experience
-    ════════════════════════════════════════════ -->
-    <a-entity id="scene-right" visible="false">
-
-      <!-- START button — on the ceiling so the user lies down and looks up -->
-      <a-entity
-        class="gaze-target"
-        geometry="primitive: circle; radius: 0.6"
-        material="color: #000; opacity: 0; transparent: true; side: double"
-        position="0 5 -1"
-        rotation="75 0 0"
-        gaze-select="label: start; duration: 3000">
-
-        <a-circle
-          class="visual-dot"
-          radius="0.52"
-          position="0 0 0.001"
-          material="shader: flat; color: #00c853; side: double">
-        </a-circle>
-
-        <a-ring
-          class="gaze-ring"
-          radius-inner="0.55"
-          radius-outer="0.6"
-          position="0 0 0.0005"
-          material="shader: flat; color: #00c853; opacity: 0.35; transparent: true; side: double">
-        </a-ring>
-
-        <a-text
-          class="countdown-text"
-          value=""
-          position="0 0 0.003"
-          align="center"
-          color="#ffffff"
-          width="1"
-          wrap-count="2"
-          font="roboto">
-        </a-text>
-
       </a-entity>
 
       <a-text
-        value="START"
-        position="0 3.9 -0.85"
-        rotation="75 0 0"
+        value="BACK"
+        position="0 -2.1 -4"
         align="center"
-        color="#69f0ae"
+        color="#90a4ae"
         width="3"
         font="roboto">
       </a-text>
 
-
-      <!-- BACK button -->
-      <a-entity
-        class="gaze-target"
-        geometry="primitive: circle; radius: 0.45"
-        material="color: #000; opacity: 0; transparent: true; side: double"
-        position="0 -1.5 -4"
-        gaze-select="label: back; duration: 3000">
-        <a-circle class="visual-dot" radius="0.4" position="0 0 0.001"
-          material="shader: flat; color: #546e7a; side: double"></a-circle>
-        <a-ring class="gaze-ring" radius-inner="0.42" radius-outer="0.45" position="0 0 0.0005"
-          material="shader: flat; color: #546e7a; opacity: 0.35; transparent: true; side: double"></a-ring>
-        <a-text class="countdown-text" value="" position="0 0 0.003" align="center" color="#ffffff" width="0.75" wrap-count="2" font="roboto"></a-text>
-        <a-text value="BACK" position="0 0 0.002" align="center" anchor="center" color="#90a4ae" width="3" font="roboto"></a-text>
-      </a-entity>
-
-    </a-entity><!-- /scene-right -->
+    </a-entity><!-- /scene-ear -->
 
     <a-sky color="#050a0f"></a-sky>
 
