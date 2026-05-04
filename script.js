@@ -9,52 +9,98 @@ AFRAME.registerComponent('tube-canal', {
 
   init: function () {
     var T = THREE;
+    var self = this;
 
-    var pts = [
-      new T.Vector3( 2.88, 1.30, 1.58),
-      new T.Vector3( 3.79, 8.05, 2.76),
-      new T.Vector3( 2.18, 8.01, 0.69),
-      new T.Vector3(-0.49, 7.94, 0.71),
-      new T.Vector3(-2.11, 7.98, 2.80),
-      new T.Vector3(-1.19, 1.27, 1.59),
+    // 1. Raw control points
+    var raw = [
+      [2.880,2.260,0.962], [3.277,2.553,2.159], [3.673,3.846,3.042],
+      [3.790,6.355,3.707], [3.590,8.630,2.816], [3.222,9.530,1.319],
+      [2.775,8.775,0.342], [1.986,8.074,0.659], [0.041,8.027,0.642],
+      [-0.880,8.822,0.303], [-1.248,9.511,1.336], [-1.797,8.712,2.788],
+      [-2.110,6.355,3.693], [-1.991,3.846,3.056], [-1.591,2.512,2.146],
+      [-1.190,2.266,0.974]
     ];
 
-    // Shift origin to the arch top so the entity's (0,0,0) is the arch peak
-    var offset = new T.Vector3(0.85, 7.9, 1.2);
-    this.tpts = pts.map(function (p) { return p.clone().sub(offset); });
-
-    var curve = new T.CatmullRomCurve3(this.tpts, false, 'catmullrom', 0.5);
-
-    var tubeMat = new T.MeshPhongMaterial({
-      color: 0x88bbff, transparent: true, opacity: 0.28,
-      side: T.DoubleSide, shininess: 140, specular: 0xffffff,
+    // 2. Apply 40% X-axis Gaussian spread centered at Y=8.8, sigma²=3.5
+    //    index < 8 shifts right (+X), index >= 8 shifts left (-X)
+    var spreadPts = raw.map(function (p, i) {
+      var g = Math.exp(-(p[1] - 8.8) * (p[1] - 8.8) / (2 * 3.5));
+      var x = (i < 8) ? p[0] + 0.4 * g : p[0] - 0.4 * g;
+      return new T.Vector3(x, p[1], p[2]);
     });
-    var waterMat = new T.MeshPhongMaterial({
-      color: 0x1155cc, transparent: true, opacity: 0.88,
-      shininess: 80, specular: 0x4488ff,
+
+    // 3. Centripetal CatmullRomCurve3 → resample to 80 pts → 3 Laplacian passes
+    var seedCurve = new T.CatmullRomCurve3(spreadPts, false, 'centripetal');
+    var pts = seedCurve.getSpacedPoints(79); // 80 evenly-spaced points
+
+    for (var pass = 0; pass < 3; pass++) {
+      var smoothed = pts.map(function (p, i) {
+        if (i === 0 || i === pts.length - 1) return p.clone();
+        return new T.Vector3(
+          (pts[i - 1].x + p.x + pts[i + 1].x) / 3,
+          (pts[i - 1].y + p.y + pts[i + 1].y) / 3,
+          (pts[i - 1].z + p.z + pts[i + 1].z) / 3
+        );
+      });
+      pts = smoothed;
+    }
+
+    // Center mesh at bounding-box center so entity origin is at the tube's midpoint
+    var bbox = new T.Box3().setFromPoints(pts);
+    var bboxCenter = new T.Vector3();
+    bbox.getCenter(bboxCenter);
+    pts = pts.map(function (p) { return p.clone().sub(bboxCenter); });
+
+    // 4. Final curve from smoothed, centred points
+    var curve = new T.CatmullRomCurve3(pts, false, 'centripetal');
+    this.smoothedPts = pts;
+    this.curve = curve;
+    this.curveLength = curve.getLength();
+
+    // Two-pass glass: back faces first, front faces second — gives a hollow glass look
+    var tubeGeo = new T.TubeGeometry(curve, 500, 0.42, 24, false);
+
+    var backMat = new T.MeshPhongMaterial({
+      color: 0xaaddff, transparent: true, opacity: 0.07,
+      side: T.BackSide, shininess: 220, specular: 0xffffff, depthWrite: false,
     });
+    var frontMat = new T.MeshPhongMaterial({
+      color: 0xcceeff, transparent: true, opacity: 0.13,
+      side: T.FrontSide, shininess: 220, specular: 0xffffff, depthWrite: false,
+    });
+
+    var backMesh  = new T.Mesh(tubeGeo, backMat);
+    var frontMesh = new T.Mesh(tubeGeo, frontMat);
+    backMesh.renderOrder  = 1;
+    frontMesh.renderOrder = 2;
 
     this.group = new T.Group();
-    this.group.add(new T.Mesh(new T.TubeGeometry(curve, 300, 0.42, 20, false), tubeMat));
+    this.group.add(backMesh);
+    this.group.add(frontMesh);
 
-    this.waterMesh = new T.Mesh(new T.TubeGeometry(curve, 300, 0.30, 18, false), waterMat);
+    // Dummy waterMesh so tick() doesn't crash (invisible)
+    this.waterMesh = new T.Mesh(new T.TubeGeometry(curve, 60, 0.01, 4, false),
+      new T.MeshBasicMaterial({ visible: false }));
     this.group.add(this.waterMesh);
 
+    // Sphere end caps
     var capGeo = new T.SphereGeometry(0.42, 16, 16);
-    var self = this;
-    [this.tpts[0], this.tpts[this.tpts.length - 1]].forEach(function (p) {
-      var c = new T.Mesh(capGeo, tubeMat);
-      c.position.copy(p);
-      self.group.add(c);
+    [pts[0], pts[pts.length - 1]].forEach(function (p) {
+      var backCap  = new T.Mesh(capGeo, backMat);
+      var frontCap = new T.Mesh(capGeo, frontMat);
+      backCap.renderOrder  = 1;
+      frontCap.renderOrder = 2;
+      backCap.position.copy(p);
+      frontCap.position.copy(p);
+      self.group.add(backCap);
+      self.group.add(frontCap);
     });
 
     // Otolith crystal sphere — left ear starts at first point, right ear at last point
     var ear = this.data.ear;
     this.crystal = null;
-    this.ballT  = 0;
-    this.ballV  = 0;
-    this.curve  = curve;
-    this.curveLength = curve.getLength();
+    this.ballT = 0;
+    this.ballV = 0;
 
     if (ear === 'left' || ear === 'right') {
       this.ballT = (ear === 'right') ? 1.0 : 0.0;
@@ -77,58 +123,43 @@ AFRAME.registerComponent('tube-canal', {
 
     this.el.object3D.add(this.group);
     this.elapsed = 0;
-    this._invWorld = new THREE.Matrix4();
+    this._invWorld = new T.Matrix4();
   },
 
-  tick: function (time, delta) {
+  tick: function (_time, delta) {
     if (!this.el.object3D.visible) return;
     var T = THREE;
-    var dt = Math.min(delta / 1000, 0.05); // cap at 50 ms to avoid tunnelling
+    var dt = Math.min(delta / 1000, 0.05);
     this.elapsed += dt;
     var t = this.elapsed;
+    var pts = this.smoothedPts;
 
-    // Water ripple animation
-    var wpts = this.tpts.map(function (p, i) {
+    // Water ripple: displace Y of each point by sin(i*0.4 + time*1.3)*0.012
+    var wpts = pts.map(function (p, i) {
       return new T.Vector3(
         p.x,
-        p.y + Math.sin(i * 0.35 + t * 1.4) * 0.012,
+        p.y + Math.sin(i * 0.4 + t * 1.3) * 0.012,
         p.z
       );
     });
     this.waterMesh.geometry.dispose();
     this.waterMesh.geometry = new T.TubeGeometry(
-      new T.CatmullRomCurve3(wpts, false, 'catmullrom', 0.5),
-      300, 0.30, 18, false
+      new T.CatmullRomCurve3(wpts, false, 'centripetal'),
+      500, 0.30, 24, false
     );
 
-    // Ball physics
+    // Ball physics — gravity projected onto curve tangent in local space
     if (this.crystal) {
-      // Transform world-space gravity into this entity's local space.
-      // As the camera (and tube) rotates with head movement, localGravity
-      // changes direction, causing the ball to roll through the tube.
       this._invWorld.copy(this.el.object3D.matrixWorld).invert();
       var localGravity = new T.Vector3(0, -1, 0).transformDirection(this._invWorld);
-
-      // Acceleration = component of gravity along the curve tangent (m/s² → t/s²)
       var tangent = this.curve.getTangent(this.ballT);
-      var G = 6.0; // gravity strength, tuned for feel
+      var G = 6.0;
       var accel = localGravity.dot(tangent) * G / this.curveLength;
-
-      // Integrate velocity and position
       this.ballV += accel * dt;
-      this.ballV *= Math.exp(-1.8 * dt); // viscous damping (fluid resistance)
+      this.ballV *= Math.exp(-1.8 * dt);
       this.ballT += this.ballV * dt;
-
-      // Soft bounce at both ends
-      if (this.ballT <= 0) {
-        this.ballT = 0;
-        this.ballV = Math.abs(this.ballV) * 0.25;
-      }
-      if (this.ballT >= 1) {
-        this.ballT = 1;
-        this.ballV = -Math.abs(this.ballV) * 0.25;
-      }
-
+      if (this.ballT <= 0) { this.ballT = 0; this.ballV =  Math.abs(this.ballV) * 0.25; }
+      if (this.ballT >= 1) { this.ballT = 1; this.ballV = -Math.abs(this.ballV) * 0.25; }
       this.crystal.position.copy(this.curve.getPoint(this.ballT));
     }
   },
@@ -154,11 +185,18 @@ const SceneManager = {
     // Show target scene
     document.getElementById('scene-' + name).setAttribute('visible', true);
 
-    // Show the camera-locked tube for the active ear, hide otherwise
     ['left', 'right'].forEach(function (ear) {
       var el = document.getElementById('tube-' + ear);
       if (el) el.setAttribute('visible', name === ear);
     });
+
+    // Reset camera to face forward so world-space BACK button is always at bottom center
+    var cam = document.querySelector('[camera]');
+    if (cam && cam.components['look-controls']) {
+      var lc = cam.components['look-controls'];
+      lc.yawObject.rotation.y   = 0;
+      lc.pitchObject.rotation.x = 0;
+    }
 
     // Reset all gaze-select components so in-progress timers don't carry over
     document.querySelectorAll('[gaze-select]').forEach(function (el) {
