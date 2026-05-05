@@ -11,6 +11,15 @@
   window.addEventListener('orientationchange', lockLandscape);
 })();
 
+// Shows one scene-3 arrow by ID and hides the other three
+function showScene3Arrow(id) {
+  ['scene3-arrow-right', 'scene3-arrow-left', 'scene3-arrow-roll-left', 'scene3-arrow-roll-right']
+    .forEach(function (aid) {
+      var el = document.getElementById(aid);
+      if (el) el.setAttribute('visible', aid === id);
+    });
+}
+
 // ─────────────────────────────────────────────
 // Tube Canal – A-Frame component
 // ─────────────────────────────────────────────
@@ -262,10 +271,11 @@ const SceneManager = {
     if (scene3Text) scene3Text.setAttribute('visible', isManeuver);
     // Arrows are shown/hidden by scene logic; only force-hide when leaving maneuver
     if (!isManeuver) {
-      var ra = document.getElementById('scene3-arrow-right');
-      var la = document.getElementById('scene3-arrow-left');
-      if (ra) ra.setAttribute('visible', false);
-      if (la) la.setAttribute('visible', false);
+      ['scene3-arrow-right', 'scene3-arrow-left', 'scene3-arrow-roll-left', 'scene3-arrow-roll-right']
+        .forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.setAttribute('visible', false);
+        });
     }
 
     // Reset camera to face forward so world-space BACK button is always at bottom center
@@ -443,6 +453,7 @@ const Scene3 = {
   _orientationListener: null,
   _holdTimer: null,
   _uiTimer: null,
+  _uiTimer2: null,
   _tiltDetected: false,
 
   enter: function () {
@@ -461,8 +472,25 @@ const Scene3 = {
       var textEl = document.getElementById('scene3-text');
       if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn right' : 'Turn left');
       SceneManager.show('3');
-      document.getElementById('scene3-arrow-right').setAttribute('visible', ear === 'right');
-      document.getElementById('scene3-arrow-left').setAttribute('visible',  ear === 'left');
+      showScene3Arrow(ear === 'right' ? 'scene3-arrow-right' : 'scene3-arrow-left');
+
+      // Instruction timeline starts immediately — independent of tilt detection
+      self._uiTimer = setTimeout(function () {
+        var textEl = document.getElementById('scene3-text');
+        if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn left' : 'Turn right');
+        showScene3Arrow(ear === 'right' ? 'scene3-arrow-left' : 'scene3-arrow-right');
+      }, 35000);
+
+      self._uiTimer2 = setTimeout(function () {
+        var textEl = document.getElementById('scene3-text');
+        if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Roll left' : 'Roll right');
+        showScene3Arrow(ear === 'right' ? 'scene3-arrow-roll-left' : 'scene3-arrow-roll-right');
+        self._holdTimer = setTimeout(function () {
+          Scene3.exit();
+          Scene4.enter();
+        }, 3000);
+      }, 70000);
+
       self._tiltDetected = false;
       self._orientationListener = self._onOrientation.bind(self);
       window.addEventListener('deviceorientation', self._orientationListener);
@@ -491,30 +519,14 @@ const Scene3 = {
   },
 
   _startCrystalAnimation: function () {
-    var self = this;
     var tubeEl = document.getElementById('tube-' + SceneManager.activeEar);
     if (!tubeEl) return;
     var comp = tubeEl.components['tube-canal'];
     if (!comp) return;
 
-    // 35 s after animation starts, swap UI to the next instruction
-    this._uiTimer = setTimeout(function () {
-      var ear = SceneManager.activeEar;
-      var textEl = document.getElementById('scene3-text');
-      if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn left' : 'Turn right');
-      document.getElementById('scene3-arrow-right').setAttribute('visible', ear !== 'right');
-      document.getElementById('scene3-arrow-left').setAttribute('visible',  ear === 'right');
-    }, 35000);
-
-    // Right ear: t=1 → t=0.667 (1/3 from right end, moving left)
-    // Left ear:  t=0 → t=0.333 (1/3 from left end, moving right)
+    // Right ear: t=1 → t=0.667 | Left ear: t=0 → t=0.333
     var targetT = (SceneManager.activeEar === 'right') ? 0.667 : 0.333;
-    comp.startScene3Animation(targetT, 63, function () {
-      self._holdTimer = setTimeout(function () {
-        Scene3.exit();
-        Scene4.enter();
-      }, 3000);
-    });
+    comp.startScene3Animation(targetT, 63, function () { /* crystal frozen at target */ });
   },
 
   exit: function () {
@@ -524,6 +536,8 @@ const Scene3 = {
     }
     clearTimeout(this._uiTimer);
     this._uiTimer = null;
+    clearTimeout(this._uiTimer2);
+    this._uiTimer2 = null;
     clearTimeout(this._holdTimer);
     this._holdTimer = null;
   }
@@ -540,8 +554,7 @@ const Scene4 = {
     var textEl = document.getElementById('scene3-text');
     if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn left' : 'Turn right');
     SceneManager.show('4');
-    document.getElementById('scene3-arrow-right').setAttribute('visible', ear !== 'right');
-    document.getElementById('scene3-arrow-left').setAttribute('visible',  ear === 'right');
+    showScene3Arrow(ear === 'right' ? 'scene3-arrow-left' : 'scene3-arrow-right');
     this._tiltDetected = false;
     this._orientationListener = this._onOrientation.bind(this);
     window.addEventListener('deviceorientation', this._orientationListener);

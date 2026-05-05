@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
   <link rel="manifest" href="manifest.json">
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="script.js?v=40"></script>
+  <script src="script.js?v=42"></script>
   <style>
     body { margin: 0; background: #050a0f; }
   </style>
@@ -21,8 +21,10 @@
     renderer="antialias: true">
 
     <a-assets>
-      <img id="img-arrow-right" src="models/Arrows/Right Arrow.png">
-      <img id="img-arrow-left"  src="models/Arrows/Left Arrow.png">
+      <img id="img-arrow-right"      src="models/Arrows/Right Arrow.png">
+      <img id="img-arrow-left"       src="models/Arrows/Left Arrow.png">
+      <img id="img-arrow-roll-left"  src="models/Arrows/Roll left.png">
+      <img id="img-arrow-roll-right" src="models/Arrows/Roll right.png">
     </a-assets>
 
     <!-- ═══════════════════════════════════════════
@@ -47,7 +49,7 @@
       <!-- Instruction text — shown above tube during ear sessions -->
       <a-text
         id="instruction-text"
-        value="Lean back, look up to start the session."
+        value="Look up to start"
         position="0 1.5 -2.512"
         align="center"
         color="#e0e0e0"
@@ -57,8 +59,10 @@
       </a-text>
 
       <!-- Scene 3 camera UI — fixed to viewport, shown only during scene 3 -->
-      <a-image id="scene3-arrow-right" src="#img-arrow-right" width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
-      <a-image id="scene3-arrow-left"  src="#img-arrow-left"  width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
+      <a-image id="scene3-arrow-right"      src="#img-arrow-right"      width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
+      <a-image id="scene3-arrow-left"       src="#img-arrow-left"       width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
+      <a-image id="scene3-arrow-roll-left"  src="#img-arrow-roll-left"  width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
+      <a-image id="scene3-arrow-roll-right" src="#img-arrow-roll-right" width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
 
       <a-text
         id="scene3-text"
