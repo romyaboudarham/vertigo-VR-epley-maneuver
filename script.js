@@ -182,7 +182,7 @@ AFRAME.registerComponent('tube-canal', {
         this._invWorld.copy(this.el.object3D.matrixWorld).invert();
         var localGravity = new T.Vector3(0, -1, 0).transformDirection(this._invWorld);
         var tangent = this.curve.getTangent(this.ballT);
-        var G = 1.5;
+        var G = 1.95;
         var accel = localGravity.dot(tangent) * G / this.curveLength;
         this.ballV += accel * dt;
         this.ballV *= Math.exp(-6.0 * dt);
@@ -496,7 +496,7 @@ const Scene3 = {
     // Right ear: t=1 → t=0.667 (1/3 from right end, moving left)
     // Left ear:  t=0 → t=0.333 (1/3 from left end, moving right)
     var targetT = (SceneManager.activeEar === 'right') ? 0.667 : 0.333;
-    comp.startScene3Animation(targetT, 90, function () {
+    comp.startScene3Animation(targetT, 63, function () {
       self._holdTimer = setTimeout(function () {
         Scene3.exit();
         Scene4.enter();
@@ -557,7 +557,7 @@ const Scene4 = {
     // Right ear: t=0.667 → t=0.333 (through the arch, moving left)
     // Left ear:  t=0.333 → t=0.667 (through the arch, moving right)
     var targetT = (SceneManager.activeEar === 'right') ? 0.333 : 0.667;
-    comp.startScene3Animation(targetT, 90, function () {
+    comp.startScene3Animation(targetT, 63, function () {
       self._holdTimer = setTimeout(function () {
         Scene4.exit();
         SceneManager.show('5'); // TODO: implement scene 5
