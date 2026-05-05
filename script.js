@@ -122,6 +122,22 @@ AFRAME.registerComponent('tube-canal', {
     this.el.object3D.add(this.group);
     this.elapsed = 0;
     this._invWorld = new T.Matrix4();
+    this.physicsEnabled = true;
+    this.scene3Mode     = false;
+    this.scene3StartT   = 0;
+    this.scene3TargetT  = 0.333;
+    this.scene3Duration = 30;
+    this.scene3Elapsed  = 0;
+    this.scene3OnComplete = null;
+  },
+
+  startScene3Animation: function (targetT, duration, onComplete) {
+    this.scene3StartT   = this.ballT;
+    this.scene3TargetT  = targetT;
+    this.scene3Duration = duration;
+    this.scene3Elapsed  = 0;
+    this.scene3OnComplete = onComplete;
+    this.scene3Mode     = true;
   },
 
   tick: function (_time, delta) {
@@ -146,18 +162,34 @@ AFRAME.registerComponent('tube-canal', {
       200, 0.30, 24, false
     );
 
-    // Ball physics — gravity projected onto curve tangent in local space
+    // Ball movement — linear animation during scene 3, gravity physics otherwise
     if (this.crystal) {
-      this._invWorld.copy(this.el.object3D.matrixWorld).invert();
-      var localGravity = new T.Vector3(0, -1, 0).transformDirection(this._invWorld);
-      var tangent = this.curve.getTangent(this.ballT);
-      var G = 6.0;
-      var accel = localGravity.dot(tangent) * G / this.curveLength;
-      this.ballV += accel * dt;
-      this.ballV *= Math.exp(-1.8 * dt);
-      this.ballT += this.ballV * dt;
-      if (this.ballT <= 0) { this.ballT = 0; this.ballV =  Math.abs(this.ballV) * 0.25; }
-      if (this.ballT >= 1) { this.ballT = 1; this.ballV = -Math.abs(this.ballV) * 0.25; }
+      if (this.scene3Mode) {
+        this.scene3Elapsed += dt;
+        var progress = Math.min(this.scene3Elapsed / this.scene3Duration, 1.0);
+        this.ballT = this.scene3StartT + (this.scene3TargetT - this.scene3StartT) * progress;
+        if (progress >= 1.0) {
+          this.ballT = this.scene3TargetT;
+          this.scene3Mode    = false;
+          this.physicsEnabled = false; // freeze crystal at target so hold timer is reliable
+          if (this.scene3OnComplete) {
+            var cb = this.scene3OnComplete;
+            this.scene3OnComplete = null;
+            cb();
+          }
+        }
+      } else if (this.physicsEnabled) {
+        this._invWorld.copy(this.el.object3D.matrixWorld).invert();
+        var localGravity = new T.Vector3(0, -1, 0).transformDirection(this._invWorld);
+        var tangent = this.curve.getTangent(this.ballT);
+        var G = 1.5;
+        var accel = localGravity.dot(tangent) * G / this.curveLength;
+        this.ballV += accel * dt;
+        this.ballV *= Math.exp(-6.0 * dt);
+        this.ballT += this.ballV * dt;
+        if (this.ballT <= 0) { this.ballT = 0; this.ballV =  Math.abs(this.ballV) * 0.25; }
+        if (this.ballT >= 1) { this.ballT = 1; this.ballV = -Math.abs(this.ballV) * 0.25; }
+      }
       var p = this.curve.getPoint(this.ballT);
       this.crystal.position.set(p.x, p.y, p.z);
       this.crystal.rotation.x += dt * 1.2;
@@ -180,7 +212,7 @@ const SceneManager = {
   // duplicate gaze-target entities at identical world positions — the
   // raycaster always hit scene-left's buttons first (earlier in DOM),
   // so scene-right's buttons never received mouseenter events.
-  scenes: ['selection', 'ear'],
+  scenes: ['selection', 'ear', '3', '4'],
   activeEar: null,
 
   show: function (name) {
@@ -195,14 +227,33 @@ const SceneManager = {
     // Show target scene
     document.getElementById('scene-' + sceneId).setAttribute('visible', true);
 
-    this.activeEar = (name === 'left' || name === 'right') ? name : null;
+    // Only update activeEar on ear/selection transitions; preserve it through scene 3
+    if (name === 'left' || name === 'right') {
+      this.activeEar = name;
+    } else if (name === 'selection') {
+      this.activeEar = null;
+    }
+
+    // Show the active ear's tube throughout the maneuver (scenes 3 and 4)
+    var activeEar = this.activeEar;
+    var isManeuver = (name === '3' || name === '4');
     ['left', 'right'].forEach(function (ear) {
       var el = document.getElementById('tube-' + ear);
-      if (el) el.setAttribute('visible', name === ear);
+      if (el) el.setAttribute('visible', (name === ear) || (isManeuver && activeEar === ear));
     });
 
     var instr = document.getElementById('instruction-text');
     if (instr) instr.setAttribute('visible', name === 'left' || name === 'right');
+
+    var scene3Text = document.getElementById('scene3-text');
+    if (scene3Text) scene3Text.setAttribute('visible', isManeuver);
+    // Arrows are shown/hidden by scene logic; only force-hide when leaving maneuver
+    if (!isManeuver) {
+      var ra = document.getElementById('scene3-arrow-right');
+      var la = document.getElementById('scene3-arrow-left');
+      if (ra) ra.setAttribute('visible', false);
+      if (la) la.setAttribute('visible', false);
+    }
 
     // Reset camera to face forward so world-space BACK button is always at bottom center
     var cam = document.querySelector('[camera]');
@@ -374,6 +425,157 @@ AFRAME.registerComponent('gaze-select', {
   }
 });
 
+// === SCENE 3 — CRYSTAL MOVEMENT ===
+const Scene3 = {
+  _orientationListener: null,
+  _holdTimer: null,
+  _uiTimer: null,
+  _tiltDetected: false,
+
+  enter: function () {
+    var self = this;
+
+    function activate() {
+      var ear = SceneManager.activeEar;
+      var tubeEl = document.getElementById('tube-' + ear);
+      if (tubeEl && tubeEl.components['tube-canal']) {
+        var comp = tubeEl.components['tube-canal'];
+        comp.ballT = (ear === 'right') ? 1 : 0; // right ear starts at right end, left at left end
+        comp.ballV = 0;
+        comp.physicsEnabled = true;
+        comp.scene3Mode     = false;
+      }
+      var textEl = document.getElementById('scene3-text');
+      if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn right' : 'Turn left');
+      SceneManager.show('3');
+      document.getElementById('scene3-arrow-right').setAttribute('visible', ear === 'right');
+      document.getElementById('scene3-arrow-left').setAttribute('visible',  ear === 'left');
+      self._tiltDetected = false;
+      self._orientationListener = self._onOrientation.bind(self);
+      window.addEventListener('deviceorientation', self._orientationListener);
+    }
+
+    // iOS 13+ requires explicit permission for DeviceOrientationEvent
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(function () { activate(); })
+        .catch(function () { activate(); });
+    } else {
+      activate();
+    }
+  },
+
+  _onOrientation: function (e) {
+    if (this._tiltDetected) return;
+    // gamma > 0 = right tilt; threshold 15 degrees
+    if ((e.gamma || 0) > 15) {
+      this._tiltDetected = true;
+      window.removeEventListener('deviceorientation', this._orientationListener);
+      this._orientationListener = null;
+      this._startCrystalAnimation();
+    }
+  },
+
+  _startCrystalAnimation: function () {
+    var self = this;
+    var tubeEl = document.getElementById('tube-' + SceneManager.activeEar);
+    if (!tubeEl) return;
+    var comp = tubeEl.components['tube-canal'];
+    if (!comp) return;
+
+    // 35 s after animation starts, swap UI to the next instruction
+    this._uiTimer = setTimeout(function () {
+      var ear = SceneManager.activeEar;
+      var textEl = document.getElementById('scene3-text');
+      if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn left' : 'Turn right');
+      document.getElementById('scene3-arrow-right').setAttribute('visible', ear !== 'right');
+      document.getElementById('scene3-arrow-left').setAttribute('visible',  ear === 'right');
+    }, 35000);
+
+    // Right ear: t=1 → t=0.667 (1/3 from right end, moving left)
+    // Left ear:  t=0 → t=0.333 (1/3 from left end, moving right)
+    var targetT = (SceneManager.activeEar === 'right') ? 0.667 : 0.333;
+    comp.startScene3Animation(targetT, 90, function () {
+      self._holdTimer = setTimeout(function () {
+        Scene3.exit();
+        Scene4.enter();
+      }, 3000);
+    });
+  },
+
+  exit: function () {
+    if (this._orientationListener) {
+      window.removeEventListener('deviceorientation', this._orientationListener);
+      this._orientationListener = null;
+    }
+    clearTimeout(this._uiTimer);
+    this._uiTimer = null;
+    clearTimeout(this._holdTimer);
+    this._holdTimer = null;
+  }
+};
+
+// === SCENE 4 — SECOND CRYSTAL MOVEMENT ===
+const Scene4 = {
+  _orientationListener: null,
+  _holdTimer: null,
+  _tiltDetected: false,
+
+  enter: function () {
+    var ear = SceneManager.activeEar;
+    var arrowEl = document.getElementById('scene3-arrow');
+    var textEl  = document.getElementById('scene3-text');
+    if (arrowEl) arrowEl.setAttribute('material', 'src', ear === 'right' ? '#img-arrow-left' : '#img-arrow-right');
+    if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn left' : 'Turn right');
+
+    SceneManager.show('4');
+    this._tiltDetected = false;
+    this._orientationListener = this._onOrientation.bind(this);
+    window.addEventListener('deviceorientation', this._orientationListener);
+  },
+
+  _onOrientation: function (e) {
+    if (this._tiltDetected) return;
+    var gamma = e.gamma || 0;
+    // Right ear: turn left (gamma < -15); left ear: turn right (gamma > 15)
+    var triggered = (SceneManager.activeEar === 'right') ? gamma < -15 : gamma > 15;
+    if (triggered) {
+      this._tiltDetected = true;
+      window.removeEventListener('deviceorientation', this._orientationListener);
+      this._orientationListener = null;
+      this._startCrystalAnimation();
+    }
+  },
+
+  _startCrystalAnimation: function () {
+    var self = this;
+    var tubeEl = document.getElementById('tube-' + SceneManager.activeEar);
+    if (!tubeEl) return;
+    var comp = tubeEl.components['tube-canal'];
+    if (!comp) return;
+
+    // Right ear: t=0.667 → t=0.333 (through the arch, moving left)
+    // Left ear:  t=0.333 → t=0.667 (through the arch, moving right)
+    var targetT = (SceneManager.activeEar === 'right') ? 0.333 : 0.667;
+    comp.startScene3Animation(targetT, 90, function () {
+      self._holdTimer = setTimeout(function () {
+        Scene4.exit();
+        SceneManager.show('5'); // TODO: implement scene 5
+      }, 3000);
+    });
+  },
+
+  exit: function () {
+    if (this._orientationListener) {
+      window.removeEventListener('deviceorientation', this._orientationListener);
+      this._orientationListener = null;
+    }
+    clearTimeout(this._holdTimer);
+    this._holdTimer = null;
+  }
+};
+
 // ─────────────────────────────────────────────
 // Scene transition logic
 // ─────────────────────────────────────────────
@@ -388,7 +590,8 @@ document.addEventListener('DOMContentLoaded', function () {
       } else if (label === 'back') {
         SceneManager.show('selection');
       } else if (label === 'start') {
-        // TODO: begin Epley maneuver sequence
+        Scene3.enter();
+        // TODO: left ear has same scene 3 flow with mirrored arrow/direction
       }
     }, 600);
   });

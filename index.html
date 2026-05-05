@@ -5,7 +5,7 @@
   <title>Vertigo VR – Epley Maneuver</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="script.js?v=21"></script>
+  <script src="script.js?v=35"></script>
   <style>
     body { margin: 0; background: #050a0f; }
   </style>
@@ -16,6 +16,11 @@
     background="color: #050a0f"
     vr-mode-ui="enabled: true"
     renderer="antialias: true">
+
+    <a-assets>
+      <img id="img-arrow-right" src="models/Arrows/Right Arrow.png">
+      <img id="img-arrow-left"  src="models/Arrows/Left Arrow.png">
+    </a-assets>
 
     <!-- ═══════════════════════════════════════════
          Camera + Gaze Cursor
@@ -48,7 +53,20 @@
         visible="false">
       </a-text>
 
+      <!-- Scene 3 camera UI — fixed to viewport, shown only during scene 3 -->
+      <a-image id="scene3-arrow-right" src="#img-arrow-right" width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
+      <a-image id="scene3-arrow-left"  src="#img-arrow-left"  width="0.6" height="0.6" position="0 -1.65 -2.5" visible="false"></a-image>
 
+      <a-text
+        id="scene3-text"
+        value="Turn right"
+        position="0 -1.1 -2.5"
+        align="center"
+        color="#e0e0e0"
+        width="2.5"
+        font="roboto"
+        visible="false">
+      </a-text>
 
     </a-camera>
 
@@ -239,6 +257,10 @@
       </a-text>
 
     </a-entity><!-- /scene-ear -->
+
+    <!-- Placeholders for scene manager — UI is camera-mounted -->
+    <a-entity id="scene-3" visible="false"></a-entity>
+    <a-entity id="scene-4" visible="false"></a-entity>
 
     <a-sky color="#050a0f"></a-sky>
 
