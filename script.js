@@ -1,4 +1,16 @@
 
+// Lock screen to landscape — works on Android; on iOS requires the app
+// to be added to the home screen (PWA mode) for the manifest to take effect.
+(function () {
+  function lockLandscape() {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape-primary').catch(function () {});
+    }
+  }
+  document.addEventListener('DOMContentLoaded', lockLandscape);
+  window.addEventListener('orientationchange', lockLandscape);
+})();
+
 // ─────────────────────────────────────────────
 // Tube Canal – A-Frame component
 // ─────────────────────────────────────────────
@@ -29,9 +41,10 @@ AFRAME.registerComponent('tube-canal', {
       return new T.Vector3(x, p[1], p[2]);
     });
 
-    // 3. Centripetal CatmullRomCurve3 → resample to 80 pts → 3 Laplacian passes
+    // 3. Centripetal CatmullRomCurve3 → resample to 30 pts → 3 Laplacian passes
+    //    Fewer control points = smoother interpolated curve
     var seedCurve = new T.CatmullRomCurve3(spreadPts, false, 'centripetal');
-    var pts = seedCurve.getSpacedPoints(79); // 80 evenly-spaced points
+    var pts = seedCurve.getSpacedPoints(29); // 30 evenly-spaced points
 
     for (var pass = 0; pass < 3; pass++) {
       var smoothed = pts.map(function (p, i) {

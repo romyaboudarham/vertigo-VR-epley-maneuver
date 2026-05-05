@@ -1,0 +1,8 @@
+{
+  "name": "Vertigo VR – Epley Maneuver",
+  "short_name": "Vertigo VR",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#050a0f",
+  "theme_color": "#050a0f"
+}
