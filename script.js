@@ -524,12 +524,11 @@ const Scene4 = {
 
   enter: function () {
     var ear = SceneManager.activeEar;
-    var arrowEl = document.getElementById('scene3-arrow');
-    var textEl  = document.getElementById('scene3-text');
-    if (arrowEl) arrowEl.setAttribute('material', 'src', ear === 'right' ? '#img-arrow-left' : '#img-arrow-right');
+    var textEl = document.getElementById('scene3-text');
     if (textEl) textEl.setAttribute('value', ear === 'right' ? 'Turn left' : 'Turn right');
-
     SceneManager.show('4');
+    document.getElementById('scene3-arrow-right').setAttribute('visible', ear !== 'right');
+    document.getElementById('scene3-arrow-left').setAttribute('visible',  ear === 'right');
     this._tiltDetected = false;
     this._orientationListener = this._onOrientation.bind(this);
     window.addEventListener('deviceorientation', this._orientationListener);
